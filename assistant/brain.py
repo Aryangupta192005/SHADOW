@@ -157,7 +157,7 @@ def _rule_based_parse(text: str) -> Intent | None:
                 {"tool": "open_website", "arguments": {"url": web_url}}
             ], raw_text=text)
         return Intent(goal=f"Open {name}", steps=[
-            {"tool": "open_application", "arguments": {"name": name}}
+            {"tool": "smart_open", "arguments": {"query": name}}
         ], raw_text=text)
 
     if m := _READ_RE.match(text):

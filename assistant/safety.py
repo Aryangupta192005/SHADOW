@@ -31,6 +31,7 @@ class RiskLevel(str, Enum):
 TOOL_RISK: dict[str, RiskLevel] = {
     # LOW — read-only or clearly reversible/benign
     "open_application": RiskLevel.LOW,
+    "smart_open": RiskLevel.LOW,
     "search_files": RiskLevel.LOW,
     "read_file": RiskLevel.LOW,
     "open_website": RiskLevel.LOW,

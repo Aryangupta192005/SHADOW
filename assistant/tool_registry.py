@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from tools import applications, browser, files
+from tools import applications, browser, files, smart_open
 
 # name -> callable. Every callable must return a dict with at least
 # a "success": bool key (tools/*.py already follow this convention).
@@ -20,6 +20,8 @@ TOOLS: dict[str, Callable[..., dict[str, Any]]] = {
     "open_application": applications.open_application,
     "close_application": applications.close_application,
     "is_application_running": applications.is_application_running,
+
+    "smart_open": smart_open.smart_open,
 
     "open_website": browser.open_website,
 
@@ -54,6 +56,10 @@ def tool_specs() -> list[dict]:
          "parameters": {"name": "string"}},
         {"name": "is_application_running", "description": "Check if an application is currently running.",
          "parameters": {"name": "string"}},
+        {"name": "smart_open", "description": "Open an app if it exists, or search Desktop/Documents/Downloads/"
+                                               "Pictures/Videos/Music for a matching file and open it. Use for "
+                                               "any 'open X' request where X isn't clearly a website.",
+         "parameters": {"query": "string"}},
         {"name": "open_website", "description": "Open a URL in the user's default browser.",
          "parameters": {"url": "string"}},
         {"name": "search_files", "description": "Search a directory for files matching a glob pattern.",
