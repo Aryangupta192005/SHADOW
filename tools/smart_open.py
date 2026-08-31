@@ -6,13 +6,17 @@ website name.
 
 Resolution order:
   1. Try resolving X as an installed application (same logic
-     tools/applications.py uses — PATH + common install dirs).
-  2. If that fails, search common user folders (Desktop, Documents,
-     Downloads, Pictures, Videos, Music — including their OneDrive-
-     redirected equivalents) for files whose name matches X.
-  3. Exactly one strong match -> open it directly with its default app.
-  4. Multiple matches -> report the candidates instead of guessing,
-     so the user can say which one they meant.
+     tools/applications.py uses — PATH + Start Menu shortcuts +
+     common install dirs including Roaming AppData).
+  2. If no installed app is found, check a known website fallback
+     (e.g. WhatsApp/Telegram desktop not installed -> open the web
+     version instead).
+  3. If neither of those match, search common user folders (Desktop,
+     Documents, Downloads, Pictures, Videos, Music — including their
+     OneDrive-redirected equivalents) for files whose name matches X.
+  4. Exactly one strong file match -> open it directly with its
+     default app. Multiple matches -> report the candidates instead
+     of guessing, so the user can say which one they meant.
 
 Bounded so it can't turn into an accidental full-disk scan: capped
 search depth and a hard cap on how many files it will look at.
@@ -24,10 +28,36 @@ import os
 from pathlib import Path
 
 from assistant.logger import get_logger
-from tools import files
+from tools import browser, files
 from tools.applications import IS_WINDOWS, _resolve_executable, open_application
 
 log = get_logger("tools.smart_open")
+
+# Common services people ask for by name that also have a website fallback
+# when the desktop app isn't installed. Checked ONLY after a real installed
+# app search comes up empty, so an installed Telegram/WhatsApp desktop app
+# always wins over opening the web version.
+WEB_SERVICES: dict[str, str] = {
+    "instagram": "https://instagram.com",
+    "facebook": "https://facebook.com",
+    "twitter": "https://twitter.com",
+    "x": "https://x.com",
+    "youtube": "https://youtube.com",
+    "gmail": "https://mail.google.com",
+    "google": "https://google.com",
+    "whatsapp": "https://web.whatsapp.com",
+    "whatsapp web": "https://web.whatsapp.com",
+    "telegram": "https://web.telegram.org",
+    "netflix": "https://netflix.com",
+    "amazon": "https://amazon.com",
+    "reddit": "https://reddit.com",
+    "linkedin": "https://linkedin.com",
+    "github": "https://github.com",
+    "chatgpt": "https://chat.openai.com",
+    "claude": "https://claude.ai",
+    "tiktok": "https://tiktok.com",
+    "spotify web": "https://open.spotify.com",
+}
 
 _SKIP_DIR_NAMES = {
     "node_modules", "__pycache__", ".git", "venv", ".venv",
@@ -117,11 +147,23 @@ def smart_open(query: str) -> dict:
     if not query or not query.strip():
         return {"success": False, "message": "No name given to open."}
 
+    query_key = query.strip().lower()
+
+    # 1. Is it an installed application? (Start Menu shortcuts, PATH, common
+    #    install dirs including Roaming AppData — see tools/applications.py)
     if IS_WINDOWS:
         exe = _resolve_executable(query)
         if exe:
             return open_application(query)
 
+    # 2. No installed app found — does it have a known website fallback?
+    #    (e.g. WhatsApp/Telegram desktop not installed -> open the web version)
+    web_url = WEB_SERVICES.get(query_key)
+    if web_url:
+        log.info(f"No installed app found for '{query}'; falling back to website {web_url}")
+        return browser.open_website(web_url)
+
+    # 3. Search common personal folders for a matching file.
     directories = _candidate_directories()
     if not directories:
         return {

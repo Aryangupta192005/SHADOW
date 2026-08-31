@@ -59,30 +59,6 @@ _SEARCH_RE = re.compile(
 )
 _READ_RE = re.compile(r"^\s*(?:read|open and read)\s+(?:the\s+file\s+)?(.+?)\s*$", re.IGNORECASE)
 
-# Common web-only services people ask for by name, even though they're not
-# installed desktop applications. "open instagram" should open the website,
-# not fail trying to find a local instagram.exe.
-WEB_SERVICES: dict[str, str] = {
-    "instagram": "https://instagram.com",
-    "facebook": "https://facebook.com",
-    "twitter": "https://twitter.com",
-    "x": "https://x.com",
-    "youtube": "https://youtube.com",
-    "gmail": "https://mail.google.com",
-    "google": "https://google.com",
-    "whatsapp": "https://web.whatsapp.com",
-    "whatsapp web": "https://web.whatsapp.com",
-    "netflix": "https://netflix.com",
-    "amazon": "https://amazon.com",
-    "reddit": "https://reddit.com",
-    "linkedin": "https://linkedin.com",
-    "github": "https://github.com",
-    "chatgpt": "https://chat.openai.com",
-    "claude": "https://claude.ai",
-    "tiktok": "https://tiktok.com",
-    "spotify web": "https://open.spotify.com",
-}
-
 _EXT_HINTS = {
     "pdf": "*.pdf", "pdfs": "*.pdf",
     "python file": "*.py", "python files": "*.py",
@@ -151,11 +127,6 @@ def _rule_based_parse(text: str) -> Intent | None:
 
     if m := _APP_OPEN_RE.match(text):
         name = m.group(1).strip()
-        web_url = WEB_SERVICES.get(name.lower())
-        if web_url:
-            return Intent(goal=f"Open {name}", steps=[
-                {"tool": "open_website", "arguments": {"url": web_url}}
-            ], raw_text=text)
         return Intent(goal=f"Open {name}", steps=[
             {"tool": "smart_open", "arguments": {"query": name}}
         ], raw_text=text)
