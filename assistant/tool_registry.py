@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from tools import applications, browser, files, smart_open
+from tools import applications, browser, files, smart_open, smart_file_ops
 
 # name -> callable. Every callable must return a dict with at least
 # a "success": bool key (tools/*.py already follow this convention).
@@ -35,6 +35,10 @@ TOOLS: dict[str, Callable[..., dict[str, Any]]] = {
     "delete_file": files.delete_file,
     "delete_folder": files.delete_folder,
     "open_file": files.open_file,
+    "smart_move": smart_file_ops.smart_move,
+    "smart_copy": smart_file_ops.smart_copy,
+    "smart_rename": smart_file_ops.smart_rename,
+    "smart_delete": smart_file_ops.smart_delete,
 }
 
 
@@ -81,5 +85,14 @@ def tool_specs() -> list[dict]:
         {"name": "delete_folder", "description": "Delete a folder and its contents. HIGH RISK — requires confirmation.",
          "parameters": {"path": "string"}},
         {"name": "open_file", "description": "Open a file with its default application.",
+         "parameters": {"path": "string"}},
+        {"name": "smart_move", "description": "Move a file, fuzzy-matching the source if not an exact path.",
+         "parameters": {"source": "string", "destination": "string"}},
+        {"name": "smart_copy", "description": "Copy a file, fuzzy-matching the source if not an exact path.",
+         "parameters": {"source": "string", "destination": "string"}},
+        {"name": "smart_rename", "description": "Rename a file, fuzzy-matching it if not an exact path.",
+         "parameters": {"path": "string", "new_name": "string"}},
+        {"name": "smart_delete", "description": "Delete a file (fuzzy-matched) or folder (exact path only). "
+                                                 "HIGH RISK — requires confirmation.",
          "parameters": {"path": "string"}},
     ]

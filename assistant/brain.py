@@ -58,6 +58,10 @@ _SEARCH_RE = re.compile(
     re.IGNORECASE,
 )
 _READ_RE = re.compile(r"^\s*(?:read|open and read)\s+(?:the\s+file\s+)?(.+?)\s*$", re.IGNORECASE)
+_MOVE_RE = re.compile(r"^\s*move\s+(?:the\s+file\s+)?(.+?)\s+to\s+(.+?)\s*$", re.IGNORECASE)
+_COPY_RE = re.compile(r"^\s*copy\s+(?:the\s+file\s+)?(.+?)\s+to\s+(.+?)\s*$", re.IGNORECASE)
+_RENAME_RE = re.compile(r"^\s*rename\s+(?:the\s+file\s+)?(.+?)\s+(?:to|as)\s+(.+?)\s*$", re.IGNORECASE)
+_DELETE_RE = re.compile(r"^\s*delete\s+(?:the\s+)?(?:file\s+|folder\s+)?(.+?)\s*$", re.IGNORECASE)
 
 _EXT_HINTS = {
     "pdf": "*.pdf", "pdfs": "*.pdf",
@@ -129,6 +133,30 @@ def _rule_based_parse(text: str) -> Intent | None:
         name = m.group(1).strip()
         return Intent(goal=f"Open {name}", steps=[
             {"tool": "smart_open", "arguments": {"query": name}}
+        ], raw_text=text)
+
+    if m := _MOVE_RE.match(text):
+        source, destination = m.group(1).strip(), m.group(2).strip()
+        return Intent(goal=f"Move {source} to {destination}", steps=[
+            {"tool": "smart_move", "arguments": {"source": source, "destination": destination}}
+        ], raw_text=text)
+
+    if m := _COPY_RE.match(text):
+        source, destination = m.group(1).strip(), m.group(2).strip()
+        return Intent(goal=f"Copy {source} to {destination}", steps=[
+            {"tool": "smart_copy", "arguments": {"source": source, "destination": destination}}
+        ], raw_text=text)
+
+    if m := _RENAME_RE.match(text):
+        path, new_name = m.group(1).strip(), m.group(2).strip()
+        return Intent(goal=f"Rename {path} to {new_name}", steps=[
+            {"tool": "smart_rename", "arguments": {"path": path, "new_name": new_name}}
+        ], raw_text=text)
+
+    if m := _DELETE_RE.match(text):
+        path = m.group(1).strip()
+        return Intent(goal=f"Delete {path}", steps=[
+            {"tool": "smart_delete", "arguments": {"path": path}}
         ], raw_text=text)
 
     if m := _READ_RE.match(text):

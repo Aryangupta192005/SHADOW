@@ -51,10 +51,14 @@ TOOL_RISK: dict[str, RiskLevel] = {
     "mouse_click": RiskLevel.MEDIUM,
     "install_package": RiskLevel.MEDIUM,
     "run_script": RiskLevel.MEDIUM,
+    "smart_move": RiskLevel.MEDIUM,
+    "smart_copy": RiskLevel.MEDIUM,
+    "smart_rename": RiskLevel.MEDIUM,
 
     # HIGH — destructive, irreversible, or system-altering
     "delete_file": RiskLevel.HIGH,
     "delete_folder": RiskLevel.HIGH,
+    "smart_delete": RiskLevel.HIGH,
     "run_terminal_command": RiskLevel.HIGH,  # re-evaluated per-command below
     "shutdown_system": RiskLevel.HIGH,
     "restart_system": RiskLevel.HIGH,
@@ -118,12 +122,22 @@ def describe_action(tool_name: str, arguments: dict) -> str:
     """Human-readable one-line description of an action, for confirmation prompts."""
     if tool_name == "delete_file":
         return f"Delete file: {arguments.get('path')}"
+    if tool_name == "smart_delete":
+        from pathlib import Path
+        p = Path(str(arguments.get("path", ""))).expanduser()
+        if p.is_dir():
+            return f"Delete folder (and all contents): {p}"
+        return f"Delete file: {arguments.get('path')}"
     if tool_name == "delete_folder":
         return f"Delete folder (and all contents): {arguments.get('path')}"
     if tool_name == "run_terminal_command":
         return f"Run terminal command: {arguments.get('command')}"
-    if tool_name == "move_file":
+    if tool_name in ("move_file", "smart_move"):
         return f"Move {arguments.get('source')} -> {arguments.get('destination')}"
+    if tool_name in ("copy_file", "smart_copy"):
+        return f"Copy {arguments.get('source')} -> {arguments.get('destination')}"
+    if tool_name in ("rename_file", "smart_rename"):
+        return f"Rename {arguments.get('path')} -> {arguments.get('new_name')}"
     if tool_name == "close_application":
         return f"Close application: {arguments.get('name')}"
     return f"{tool_name}({arguments})"
